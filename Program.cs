@@ -189,15 +189,15 @@ class Program
 
             int userId = data[0].GetProperty("id").GetInt32();
 
-            // Step 2: Check if the user owns the game pass (updated API endpoint)
-            var ownershipResponse = await http.GetStringAsync($"https://inventory.roblox.com/v1/users/{userId}/owned-items?assetType=GamePass");
-            var ownershipJson = JsonDocument.Parse(ownershipResponse).RootElement;
+            // Step 2: Check if the user owns the game pass by fetching inventory
+            var inventoryResponse = await http.GetStringAsync($"https://inventory.roblox.com/v1/users/{userId}/assets?assetType=GamePass");
+            var inventoryJson = JsonDocument.Parse(inventoryResponse).RootElement;
 
-            // Debugging the ownership check response
-            Console.WriteLine($"Ownership Check Response: {ownershipJson}");
+            // Debugging the inventory response
+            Console.WriteLine($"Inventory Check Response: {inventoryJson}");
 
-            // Look for the game pass ID in the list of owned items
-            var ownedGamePass = ownershipJson
+            // Check if the user owns the game pass by matching the asset ID
+            var ownedGamePass = inventoryJson
                 .GetProperty("data")
                 .EnumerateArray()
                 .Any(item => item.GetProperty("assetId").GetInt64() == ROBLOX_GAMEPASS_ID);
