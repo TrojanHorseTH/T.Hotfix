@@ -11,7 +11,7 @@ class Program
     // ===== CONFIG =====
     private static readonly ulong GUILD_ID = 1426233977508987082;
     private static readonly ulong SUPPORTER_ROLE_ID = 1469069621062664313; // Discord Supporter role ID
-    private static readonly long ROBLOX_GAMEPASS_ID = 1674411964; // Roblox Game Pass ID
+    private static readonly long ROBLOX_GAMEPASS_ID = 1699993169; // Roblox Game Pass ID
     private static readonly string PRIVACY_URL = "https://trojanhorseth.github.io/T.H/privacy.";
     private static readonly string TERMS_URL = "https://trojanhorseth.github.io/T.H/tos";
     private static readonly HttpClient http = new HttpClient();
