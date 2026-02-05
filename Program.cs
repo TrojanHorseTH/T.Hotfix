@@ -10,8 +10,8 @@ class Program
 {
     // ===== CONFIG =====
     private static readonly ulong GUILD_ID = 1426233977508987082;
-    private static readonly ulong SUPPORTER_ROLE_ID = 1469069621062664313; // <-- Discord Supporter role ID
-    private static readonly long ROBLOX_GAMEPASS_ID = 1674411964; // <-- Roblox Game Pass ID
+    private static readonly ulong SUPPORTER_ROLE_ID = 1469069621062664313; // Discord Supporter role ID
+    private static readonly long ROBLOX_GAMEPASS_ID = 1674411964; // Roblox Game Pass ID
     private static readonly string PRIVACY_URL = "https://trojanhorseth.github.io/T.H/privacy.";
     private static readonly string TERMS_URL = "https://trojanhorseth.github.io/T.H/tos";
     private static readonly HttpClient http = new HttpClient();
@@ -171,18 +171,24 @@ class Program
     {
         try
         {
-            var userResponse = await http.GetStringAsync($"https://api.roblox.com/users/get-by-username?username={username}");
-            var userJson = JsonDocument.Parse(userResponse).RootElement;
-            if (userJson.TryGetProperty("Id", out var idProp))
+            // Step 1: Get user ID by username
+            var userResponse = await http.GetStringAsync($"https://users.roblox.com/v1/usernames/users");
+            var postData = new
             {
-                int userId = idProp.GetInt32();
-                var ownershipResponse = await http.GetStringAsync(
-                    $"https://apis.roblox.com/ownerships/users/{userId}/asset/{ROBLOX_GAMEPASS_ID}");
-                var ownershipJson = JsonDocument.Parse(ownershipResponse).RootElement;
+                usernames = new string[] { username },
+                excludeBannedUsers = true
+            };
+            var content = new StringContent(JsonSerializer.Serialize(postData), System.Text.Encoding.UTF8, "application/json");
+            var response = await http.PostAsync("https://users.roblox.com/v1/usernames/users", content);
+            var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
+            if (!json.TryGetProperty("data", out var data) || data.GetArrayLength() == 0) return false;
+            int userId = data[0].GetProperty("id").GetInt32();
 
-                if (ownershipJson.TryGetProperty("owned", out var ownedProp))
-                    return ownedProp.GetBoolean();
-            }
+            // Step 2: Check game pass ownership
+            var ownershipResponse = await http.GetStringAsync($"https://apis.roblox.com/ownerships/users/{userId}/asset/{ROBLOX_GAMEPASS_ID}");
+            var ownershipJson = JsonDocument.Parse(ownershipResponse).RootElement;
+            if (ownershipJson.TryGetProperty("owned", out var ownedProp))
+                return ownedProp.GetBoolean();
         }
         catch
         {
