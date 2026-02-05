@@ -171,7 +171,7 @@ class Program
     {
         try
         {
-            // Step 1: Get user ID by username
+            // Step 1: Get the user ID by username
             var userResponse = await http.GetStringAsync($"https://users.roblox.com/v1/usernames/users");
             var postData = new
             {
@@ -181,19 +181,33 @@ class Program
             var content = new StringContent(JsonSerializer.Serialize(postData), System.Text.Encoding.UTF8, "application/json");
             var response = await http.PostAsync("https://users.roblox.com/v1/usernames/users", content);
             var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
+
+            // Debugging the output of Roblox username API response
+            Console.WriteLine($"Roblox API Response: {json}");
+
             if (!json.TryGetProperty("data", out var data) || data.GetArrayLength() == 0) return false;
+
             int userId = data[0].GetProperty("id").GetInt32();
 
-            // Step 2: Check game pass ownership
-            var ownershipResponse = await http.GetStringAsync($"https://apis.roblox.com/ownerships/users/{userId}/asset/{ROBLOX_GAMEPASS_ID}");
+            // Step 2: Check if the user owns the game pass (updated API endpoint)
+            var ownershipResponse = await http.GetStringAsync($"https://inventory.roblox.com/v1/users/{userId}/owned-items?assetType=GamePass");
             var ownershipJson = JsonDocument.Parse(ownershipResponse).RootElement;
-            if (ownershipJson.TryGetProperty("owned", out var ownedProp))
-                return ownedProp.GetBoolean();
+
+            // Debugging the ownership check response
+            Console.WriteLine($"Ownership Check Response: {ownershipJson}");
+
+            // Look for the game pass ID in the list of owned items
+            var ownedGamePass = ownershipJson
+                .GetProperty("data")
+                .EnumerateArray()
+                .Any(item => item.GetProperty("assetId").GetInt64() == ROBLOX_GAMEPASS_ID);
+
+            return ownedGamePass;
         }
-        catch
+        catch (Exception ex)
         {
+            Console.WriteLine($"Error during ownership check: {ex.Message}");
             return false;
         }
-        return false;
     }
 }
